@@ -1,39 +1,23 @@
-# 🏏 T20 Cricket Match Winner Predictor
+# T20 Oracle
 
-> Predict the winner of a T20 cricket match using machine learning trained on 11,000+ real-world games.
+Predict the winner of a T20 cricket match with machine learning, trained on 11,000+ historical games.
 
-This project uses historical T20 cricket data to train ML models that can predict match outcomes based on teams, venue, toss, and performance features.
+The models use features such as teams, venue, toss and recent performance. A small FastAPI backend serves predictions (`backend/`), and the training notebooks are in `Notebooks/`.
 
----
+## What's done
 
-## ✅ What’s Done
+- Trained and compared Logistic Regression, Random Forest and XGBoost
+- Hyperparameter tuning with GridSearchCV
+- Evaluated with accuracy, log loss and Brier score
+- FastAPI service around the trained model
 
-- 🧠 Trained multiple models (Logistic Regression, Random Forest, XGBoost)
-- 📈 Achieved ~73% accuracy on unseen test data
-- ⚙️ Performed hyperparameter tuning using GridSearchCV
-- 📉 Evaluated model using:
-  - Accuracy Score (`~73%`)
-  - Log Loss (`~0.53`)
-  - Brier Score (`~0.18`)
+## Results and limitations
 
----
+Evaluation figures are being re-checked, so they are not published here yet. _(Pending: confirmation of a possible data-leakage issue in the feature pipeline.)_
 
-## 🚧 What’s Coming Next
+## What's next
 
-- [ ] Save trained models to `.pkl` for later use
-- [ ] Build a match simulator (`simulate_match(teamA, teamB)`)
-- [ ] Allow user-defined fantasy teams (e.g., *India vs RCB*)
-- [ ] Build betting EV calculator from model outputs
-- [ ] Add web interface (Streamlit or Flask)
-
----
-
-## 🧪 Quick Start (Model Training)
-
-```python
-# Load and preprocess dataset
-df = pd.read_csv("t20_features_full.csv")
-# Encode categorical variables, split into train/test
-# Train model
-model = RandomForestClassifier(...)
-model.fit(X_train, y_train)
+- Save trained models to disk for reuse
+- Match simulator: `simulate_match(teamA, teamB)`
+- User-defined teams (for example India vs RCB)
+- Add a web interface (Streamlit or Flask)
