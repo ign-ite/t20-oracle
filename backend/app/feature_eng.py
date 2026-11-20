@@ -18,6 +18,9 @@ def load_all_matches(data_dir):
                 match = json.load(f)
                 if match.get("info", {}).get("match_type") == "T20":
                     matches.append(match)
+    # Process matches in chronological order. os.listdir order is arbitrary,
+    # which made "recent form" / head-to-head features draw on FUTURE matches.
+    matches.sort(key=lambda m: m.get("info", {}).get("dates", ["9999-12-31"])[0])
     return matches
 
 def extract_basic_metadata(match):
@@ -50,6 +53,7 @@ def compute_total_runs(match, team):
 
 def feature_engineering(matches):
     data = []
+    skipped_no_result = 0
 
     # History trackers
     team_wins = defaultdict(list)
@@ -70,9 +74,15 @@ def feature_engineering(matches):
         toss_winner = meta['toss_winner']
         toss_decision = meta['toss_decision']
 
-        # Update player stats before computing form features
-        update_player_stats(match)
+        # No-result matches have no winner to predict; skip them.
+        if winner == "No Result":
+            skipped_no_result += 1
+            continue
 
+        # Player form features MUST be computed from state before this match.
+        # Previously update_player_stats(match) ran first, which leaked the
+        # current match's runs, wickets and Player of the Match into the
+        # "recent form" features used to predict its winner.
         players = match.get("info", {}).get("players", {})
         teamA_players = players.get(A, [])
         teamB_players = players.get(B, [])
@@ -109,7 +119,10 @@ def feature_engineering(matches):
         toss_win_rate = toss_match_wins / toss_total if toss_total else 0.5
 
         # Batting first win rate
-        bat_first_team = A if toss_winner == B else B if toss_decision == "field" else toss_winner
+        if toss_decision == "bat":
+            bat_first_team = toss_winner
+        else:
+            bat_first_team = B if toss_winner == A else A
         bat_first_wins, bat_first_total = bat_first_outcomes
         bat_first_win_pct = bat_first_wins / bat_first_total if bat_first_total else 0.5
 
@@ -140,7 +153,10 @@ def feature_engineering(matches):
             "match_winner_teamA": 1 if winner == A else 0
         })
 
-        # Update history trackers
+        # Update history trackers only AFTER all features for this match
+        # have been computed, so nothing from this match leaks into its own
+        # feature row.
+        update_player_stats(match)
         team_wins[A].append(1 if winner == A else 0)
         team_wins[B].append(1 if winner == B else 0)
         h2h_tracker[A][B].append(1 if winner == A else 0)
@@ -162,6 +178,8 @@ def feature_engineering(matches):
             bat_first_outcomes[0] += 1
         bat_first_outcomes[1] += 1
 
+    if skipped_no_result:
+        print(f"Skipped {skipped_no_result} no-result matches (no winner to predict).")
     return pd.DataFrame(data)
 
 if __name__ == "__main__":
